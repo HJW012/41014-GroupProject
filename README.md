@@ -10,10 +10,6 @@ A few points before it will work properly. You guys will need to clone and build
 
 http://wiki.ros.org/ar_track_alvar#ar_track_alvar.2BAC8-post-fuerte.Generating_AR_tags
 
-The 'table_0_1_2.xml' xml file in the ar_tag_demo folder you will need to move to:
-
-~/catkin_ws/src/ar_track_alvar/ar_track_alvar/bundles
-
 To run the package you will need to initialise a turtlebot environment first then roslaunch the main.launch
 
 To look at the outputs you can rostopic echo the ar_pose_marker topic or you can run RVIZ, set the camera as the main reference (instead of map) and add the TF. You should then be able to move both the turtlebot and/or the marker around gazebo and it should update.
