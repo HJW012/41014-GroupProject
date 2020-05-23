@@ -25,9 +25,12 @@ followerOffset = 0.2; % 20 cm
 localPoseData = receive(arTagSub,5);
 odomData = receive(followerOdomSub, 5);
 
+lostAR = 0;
+
 while size(localPoseData.Markers,1) < 1
+    lostAR = 1;
     % Spin around in circles searching for AR tag in vision
-    sendVel(robotVelocity, 0, 1.5);
+    sendVel(robotVelocity, 0, 1);
         
     
     disp('Searching for first Tag');
@@ -36,6 +39,8 @@ while size(localPoseData.Markers,1) < 1
     pause(0.1);
     
 end
+
+lostAR = 0;
 
 disp('Found first tag');
 % Stop spinning
@@ -90,7 +95,7 @@ while counter < 2
 end
 
 % Interpolate Leader Orientation
-[desiredOrientation, direction] = InterpolateLeaderOrientation(currentARGlobalPosition, previousARGlobalPosition, tbOrientation(3));
+[desiredOrientation, direction] = InterpolateLeaderOrientation(currentARGlobalPosition, previousARGlobalPosition, tbOrientation(1));
 
 % Calculate target position offset from leader
 targetGlobalPosition = [(currentARGlobalPosition.Position.X - (followerOffset*(cos(desiredOrientation)))), (currentARGlobalPosition.Position.Y - (followerOffset*(sin(desiredOrientation)))), 0];
@@ -101,13 +106,18 @@ disp(['Target Orientation: ', num2str(desiredOrientation)]);
 disp(['Leader Position: ', num2str(currentARGlobalPosition.Position.X), ', ', num2str(currentARGlobalPosition.Position.Y)]);
 disp(['Target Position: ', num2str(targetGlobalPosition)]);
 if direction == 2
-    % Leader Stopped, stop driving
+    % Leader Stopped, 
+    
+    [linearVel, angularVel] = calculateDriveParams(tbPose, tbOrientation(1), targetGlobalPosition, desiredOrientation);
     
 else
     % Drive towards leader using currentARGlobalPosition, direction (1 =
     % forwards, 0 = reverse) & target orientation
-    
+    [linearVel, angularVel] = calculateDriveParams(tbPose, tbOrientation(1), targetGlobalPosition, desiredOrientation);
+
 end
+
+sendVel(robotVelocity, linearVel, angularVel);
 
 
 
@@ -119,6 +129,14 @@ while(1)
     odomData = receive(followerOdomSub, 5);
     
     if size(localPoseData.Markers,1) > 0
+        if lostAR == 1
+            disp('Found AR Tag again');
+            linearVel = 0;
+            angularVel = 0;
+            sendVel(robotVelocity, linearVel, angularVel);
+            lostAR = 0;
+        end
+        
         % Store second Pose
         previousARGlobalPosition = currentARGlobalPosition;
         previousOrientation = desiredOrientation;
@@ -138,7 +156,7 @@ while(1)
         currentARGlobalPosition = ConvertToGlobal(currentOffsetLocalPose, tbPose, tbOrientation);
 
         % Interpolate Orientation
-        [desiredOrientation, direction] = InterpolateLeaderOrientation(currentARGlobalPosition, previousARGlobalPosition, tbOrientation(3));
+        [desiredOrientation, direction] = InterpolateLeaderOrientation(currentARGlobalPosition, previousARGlobalPosition, tbOrientation(1));
         
                       
         if direction == 2
@@ -152,7 +170,8 @@ while(1)
             % Calculate target position offset from leader
             targetGlobalPosition = [(currentARGlobalPosition.Position.X - (followerOffset*(cos(desiredOrientation)))), (currentARGlobalPosition.Position.Y - (followerOffset*(sin(desiredOrientation)))), 0];
             
-            [linearVel, angularVel] = calculateDriveParams(tbPose, tbOrientation, targetGlobalPosition, desiredOrientation);
+            % Calculate parameters to drive to leader
+            [linearVel, angularVel] = calculateDriveParams(tbPose, tbOrientation(1), targetGlobalPosition, desiredOrientation);
 
         else
             % Calculate target position offset from leader
@@ -160,7 +179,9 @@ while(1)
             
             % Drive towards leader using targetGlobalPosition, direction (1 =
             % forwards, 0 = reverse) & target orientation
-            [linearVel, angularVel] = calculateDriveParams(tbPose, tbOrientation, targetGlobalPosition, desiredOrientation);
+            
+            % Calculate parameters to drive to leader
+            [linearVel, angularVel] = calculateDriveParams(tbPose, tbOrientation(1), targetGlobalPosition, desiredOrientation);
 
 
         end
@@ -174,7 +195,7 @@ while(1)
     
     
     
-        % Calculate parameters to drive to leader
+        
 
 
         % Send velocity command to ROS
@@ -184,7 +205,11 @@ while(1)
     else
         % Lost the AR tag, spin around to search for it again
         disp('Lost AR Tag, searching again');
-        sendVel(robotVelocity, 0, 0.5);
+        lostAR = 1;
+        
+        linearVel = 0;
+        angularVel = 1;
+        sendVel(robotVelocity, linearVel, angularVel);
         
         
         % Read latest ROS messages (odom and ar tag)
@@ -193,7 +218,7 @@ while(1)
        
     end
     
-    pause(0.5);
+    pause(0.1);
 end
 
 
