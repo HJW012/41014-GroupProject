@@ -130,7 +130,7 @@ sendVel(robotVelocity, linearVel, angularVel);
 count = 0;
 % Main Loop
 while(1)
-    disp('In Main Loop');
+    %disp('In Main Loop');
     if count == 15
         count = 0;
         
@@ -275,12 +275,12 @@ function [linearVel, angularVel] = calculateDriveParams(currentPose, currentOrie
         x2 = targetGlobalPose(1);
         y2 = targetGlobalPose(2);
         z2 = targetGlobalPose(3);
-        distanceToTarget = distance(x1, y1, z1, x2, y2, z2)
+        distanceToTarget = distance(x1, y1, z1, x2, y2, z2);
         
         linearGap = 0.5;
         angleGap = 0.001;
-        angularGain = 1;
-        linearGain = 1;
+        angularGain = 0.75;
+        linearGain = 0.5;
         angularVel = 0;
         linearVel = 0;
         
@@ -288,20 +288,20 @@ function [linearVel, angularVel] = calculateDriveParams(currentPose, currentOrie
             theta = angle(x1, y1, x2, y2);
             delta = currentOrientation; % Currently in range of -pi to pi with zero being right x axis
             
-            angleToGo = abs(delta(1) - theta)
+            angleToGo = abs(delta(1) - theta);
             
             % Case 1 - target above turtle
             if (y1 < y2)
                 sigma = -(pi - theta);
                 if (delta(1) > theta && delta(1) < pi || delta(1) > -pi && delta(1) < sigma)
                     if (abs(angleToGo)> abs(angleGap)) % Dont think this should work for every scenario due to -pi to pi range
-                        angularVel = -angularGain * abs(angleToGo) 
+                        angularVel = -angularGain * abs(angleToGo);
                     end
                 end
                 
                 if (delta(1) > sigma && delta(1) < 0 || delta(1) > 0 && delta(1) < theta)
                     if (abs(angleToGo) > abs(angleGap)) % Dont think this should work for every scenario due to -pi to pi range
-                        angularVel = angularGain * abs(angleToGo)
+                        angularVel = angularGain * abs(angleToGo);
                     end
                 end
             end
@@ -312,19 +312,18 @@ function [linearVel, angularVel] = calculateDriveParams(currentPose, currentOrie
                 
                 if (delta(1) < 0 && delta(1) > theta || delta(1) > 0 && delta(1) < sigma)
                     if (abs(angleToGo) > abs(angleGap)) % Dont think this should work for every scenario due to -pi to pi range
-                        angularVel = -angularGain * abs(angleToGo)
+                        angularVel = -angularGain * abs(angleToGo);
                     end
                 end
                 
                 if (delta(1) > sigma && delta(1) < pi || delta(1) > -pi && delta(1) < theta)
                     if (abs(angleToGo) > abs(angleGap)) % Dont think this should work for every scenario due to -pi to pi range
-                        angularVel = angularGain * abs(angleToGo)
+                        angularVel = angularGain * abs(angleToGo);
                     end
                 end
             end
-            if (abs(angleToGo) <= 100 * angleGap)
-                linearVel = linearGain * distanceToTarget
-                angularVel = 0;
+            if (abs(angleToGo) <= 500 * angleGap)
+                linearVel = linearGain * distanceToTarget;
             end
             
             %sendVel(r, linVel, angVel);
@@ -342,7 +341,40 @@ function [linearVel, angularVel] = calculateDriveParams(currentPose, currentOrie
                 
             else
                 linearVel = 0;
-                angularVel = -1*angularGain*angleToGo;
+                
+                % Case 1 - target above turtle
+                if (y1 < y2)
+                    sigma = -(pi - theta);
+                    if (delta(1) > theta && delta(1) < pi || delta(1) > -pi && delta(1) < sigma)
+                        if (abs(angleToGo)> abs(angleGap)) % Dont think this should work for every scenario due to -pi to pi range
+                            angularVel = -angularGain * abs(angleToGo);
+                        end
+                    end
+
+                    if (delta(1) > sigma && delta(1) < 0 || delta(1) > 0 && delta(1) < theta)
+                        if (abs(angleToGo) > abs(angleGap)) % Dont think this should work for every scenario due to -pi to pi range
+                            angularVel = angularGain * abs(angleToGo);
+                        end
+                    end
+                end
+
+                % Case 2 - target below turtle
+                if (y2 < y1)
+                    sigma = pi + theta;
+
+                    if (delta(1) < 0 && delta(1) > theta || delta(1) > 0 && delta(1) < sigma)
+                        if (abs(angleToGo) > abs(angleGap)) % Dont think this should work for every scenario due to -pi to pi range
+                            angularVel = -angularGain * abs(angleToGo);
+                        end
+                    end
+
+                    if (delta(1) > sigma && delta(1) < pi || delta(1) > -pi && delta(1) < theta)
+                        if (abs(angleToGo) > abs(angleGap)) % Dont think this should work for every scenario due to -pi to pi range
+                            angularVel = angularGain * abs(angleToGo);
+                        end
+                    end
+                end
+                
             end
 
         end
