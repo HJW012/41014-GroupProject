@@ -163,7 +163,11 @@ while(1)
             tbOrientation = quat2eul([tbQuat.W tbQuat.X tbQuat.Y tbQuat.Z]); %Rot on z is (1)
 
             % Local Pose TF
-            currentLocalPose = localPoseData.Markers.Pose.Pose;
+            try 
+                currentLocalPose = localPoseData.Markers.Pose.Pose;
+            catch
+               disp('issue here'); 
+            end
             currentOffsetLocalPose = currentLocalPose;
             currentOffsetLocalPose.Position.X = currentOffsetLocalPose.Position.X + arXOffset;
             currentOffsetLocalPose.Position.Y = currentOffsetLocalPose.Position.Y - arYOffset;
@@ -277,7 +281,7 @@ function [linearVel, angularVel] = calculateDriveParams(currentPose, currentOrie
         z2 = targetGlobalPose(3);
         distanceToTarget = distance(x1, y1, z1, x2, y2, z2);
         
-        linearGap = 0.5;
+        linearGap = 0.1;
         angleGap = 0.001;
         angularGain = 0.75;
         linearGain = 0.5;
@@ -323,7 +327,7 @@ function [linearVel, angularVel] = calculateDriveParams(currentPose, currentOrie
                 end
             end
             if (abs(angleToGo) <= 500 * angleGap)
-                linearVel = linearGain * distanceToTarget;
+                linearVel = linearGain * (distanceToTarget + 0.3);
             end
             
             %sendVel(r, linVel, angVel);
