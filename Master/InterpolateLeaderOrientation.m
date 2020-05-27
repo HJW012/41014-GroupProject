@@ -5,7 +5,7 @@ function [desiredOrientation, direction] = InterpolateLeaderOrientation(currentA
     diffGlobalPosition = [(currentARGlobalPosition.Position.X - previousARGlobalPosition.Position.X), (currentARGlobalPosition.Position.Y - previousARGlobalPosition.Position.Y), (currentARGlobalPosition.Position.Z - previousARGlobalPosition.Position.Z)];
 
     % Determine if robot has moved or not
-    if (distance > 0.01)
+    if (distance > 0.05)
         leaderOrientation = atan2(diffGlobalPosition(2), diffGlobalPosition(1))
 
         diffOrientation = leaderOrientation - tbOrientation
@@ -18,7 +18,7 @@ function [desiredOrientation, direction] = InterpolateLeaderOrientation(currentA
 
         else
             % Leader driving reverse
-            direction = 0;
+            direction = -1;
             
             % Maintain current heading but drive backwards
             if leaderOrientation <= 0
@@ -34,7 +34,7 @@ function [desiredOrientation, direction] = InterpolateLeaderOrientation(currentA
     else
         % Leader robot has stopped and maintain previous leader orientation
         direction = 2;
-        desiredOrientation = 0;
+        desiredOrientation = previousOrientation;
     end
 
 

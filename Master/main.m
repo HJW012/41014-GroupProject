@@ -17,6 +17,7 @@ robotVelocity = rospublisher('tb3_1/cmd_vel');
 
 previousARGlobalPosition = [0 0 0];
 currentARGlobalPosition = [0 0 0];
+previousDirection = 1;
 
 counter = 0;
 
@@ -114,7 +115,8 @@ disp(['Target Orientation: ', num2str(desiredOrientation)]);
 disp(['Leader Position: ', num2str(currentARGlobalPosition.Position.X), ', ', num2str(currentARGlobalPosition.Position.Y)]);
 disp(['Target Position: ', num2str(targetGlobalPosition)]);
 if direction == 2
-    % Leader Stopped, 
+    % Leader Stopped,
+    direction = previousDirection;
     
     [linearVel, angularVel] = calculateDriveParams(tbPose, tbOrientation(1), targetGlobalPosition, desiredOrientation);
     
@@ -150,6 +152,7 @@ while(1)
             % Store previous Pose
             previousARGlobalPosition = currentARGlobalPosition;
             previousOrientation = desiredOrientation;
+            previousDirection = direction;
 
             % Current TB global TF
             tbPose = odomData.Pose.Pose.Position;
@@ -170,10 +173,7 @@ while(1)
 
             if direction == 2
                 % Leader Stopped
-
-                % Maintain current heading
-                desiredOrientation = previousOrientation;
-
+                direction = previousDirection;
                 % Calculate target position offset from leader
                 targetGlobalPosition = [(currentARGlobalPosition.Position.X - (followerOffset*(cos(desiredOrientation)))), (currentARGlobalPosition.Position.Y - (followerOffset*(sin(desiredOrientation)))), 0];
 
@@ -195,9 +195,6 @@ while(1)
             disp(['Leader Position: ', num2str(currentARGlobalPosition.Position.X), ', ', num2str(currentARGlobalPosition.Position.Y)]);
             disp(['Target Position: ', num2str(targetGlobalPosition)]);
 
-            % Rhys' Waypoint
-
-
             % Send velocity command to ROS
             sendVel(robotVelocity, linearVel, angularVel);
 
@@ -212,9 +209,7 @@ while(1)
             theta = angle(tbPose.X, tbPose.Y, targetGlobalPosition(1), targetGlobalPosition(2));
 
             delta = tbOrientation(1); % Currently in range of -pi to pi with zero being right x axis
-            
-            angleToGo = theta - delta(1);
-            
+                        
             % Case 1 - target above turtle
             if (y1 < y2)
                 sigma = -(pi - theta);
@@ -307,6 +302,24 @@ function [linearVel, angularVel] = calculateDriveParams(currentPose, currentOrie
             theta = angle(x1, y1, x2, y2);
             delta = currentOrientation; % Currently in range of -pi to pi with zero being right x axis
             
+            diffAngle = theta - delta;
+            
+            if ((-1*(deg2rad(110)) < diffAngle) && (diffAngle < deg2rad(110)))
+                % Target position in front of follower
+                direction = 1;
+                
+            else
+                % Target position behind follower
+                direction = -1;
+
+                % Maintain heading in line with the target point but drive backwards
+                if theta <= 0
+                    theta = theta + pi;
+                else
+                    theta = theta - pi;
+                end
+            end
+                      
             angleToGo = abs(delta(1) - theta);
             
             % Case 1 - target above turtle
@@ -342,10 +355,9 @@ function [linearVel, angularVel] = calculateDriveParams(currentPose, currentOrie
                 end
             end
             if (abs(angleToGo) <= 500 * angleGap)
-                linearVel = linearGain * (distanceToTarget + 0.3);
+                linearVel = direction * linearGain * (distanceToTarget + 0.3);
             end
             
-            %sendVel(r, linVel, angVel);
         else
             disp("Target Reached");
             
