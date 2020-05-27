@@ -1,4 +1,4 @@
-function [desiredOrientation, direction] = InterpolateLeaderOrientation(currentARGlobalPosition, previousARGlobalPosition, tbOrientation)
+function [desiredOrientation, direction] = InterpolateLeaderOrientation(currentARGlobalPosition, previousARGlobalPosition, tbOrientation, previousOrientation)
     
     distance = sqrt((currentARGlobalPosition.Position.X - previousARGlobalPosition.Position.X)^2 + (currentARGlobalPosition.Position.Y - previousARGlobalPosition.Position.Y)^2 );
     
@@ -9,9 +9,9 @@ function [desiredOrientation, direction] = InterpolateLeaderOrientation(currentA
         leaderOrientation = atan2(diffGlobalPosition(2), diffGlobalPosition(1))
 
         diffOrientation = leaderOrientation - tbOrientation
-               
+         %diffOrientation = leaderOrientation - previousOrientation     
 
-        if ((-pi/2 < diffOrientation) && (diffOrientation < pi/2))
+        if ((-1*(deg2rad(110)) < diffOrientation) && (diffOrientation < deg2rad(110)))
             % Leader driving forward
             direction = 1;
             desiredOrientation = leaderOrientation;

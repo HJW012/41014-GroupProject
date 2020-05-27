@@ -18,6 +18,15 @@
     <fdir1>1 0 0</fdir1>
     <material>Gazebo/FlatBlack</material>
   </gazebo>
+  
+      <gazebo reference="simple_box_base_link">
+	<gravity> 0 </gravity>
+        <kp>100000.0</kp>
+        <kd>100000.0</kd>
+        <mu1>0.1</mu1>
+        <mu2>0.1</mu2>
+        <fdir>1 0 0</fdir>    
+    </gazebo>
 
   <gazebo reference="wheel_right_link">
     <mu1>0.1</mu1>

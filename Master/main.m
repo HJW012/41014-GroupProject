@@ -2,8 +2,15 @@
 %rosshutdown;
 %ipaddress = 'http://192.168.46.130:11311';
 %rosinit(ipaddress);
+clc;
+clear;
+
+pause(2);
+
+
 rosinit;
 count = 0;
+timeOut = 10;
 arTagSub = rossubscriber('ar_pose_marker', 'BufferSize', 25);
 followerOdomSub = rossubscriber('tb3_1/odom', 'BufferSize', 25);
 robotVelocity = rospublisher('tb3_1/cmd_vel');
@@ -24,8 +31,8 @@ arYOffset = 0.050; %50 mm
 followerOffset = 0.5; % 50 cm
 
 % Search for AR Tag
-localPoseData = receive(arTagSub,5);
-odomData = receive(followerOdomSub, 5);
+localPoseData = receive(arTagSub,timeOut);
+odomData = receive(followerOdomSub, timeOut);
 
 lostAR = 0;
 
@@ -33,11 +40,10 @@ while size(localPoseData.Markers,1) < 1
     lostAR = 1;
     % Spin around in circles searching for AR tag in vision
     sendVel(robotVelocity, 0, 1);
-        
     
     disp('Searching for first Tag');
-    localPoseData = receive(arTagSub,5);
-    odomData = receive(followerOdomSub, 5);
+    localPoseData = receive(arTagSub,timeOut);
+    odomData = receive(followerOdomSub, timeOut);
     pause(0.1);
     
 end
@@ -47,11 +53,6 @@ lostAR = 0;
 disp('Found first tag');
 % Stop spinning
 sendVel(robotVelocity, 0, 0);
-
-pause(2);
-
-localPoseData = receive(arTagSub,5);
-odomData = receive(followerOdomSub, 5);
 
 % Current TB global TF
 tbPose = odomData.Pose.Pose.Position;
@@ -73,8 +74,8 @@ pause(1);
 
 while counter < 2
     disp('Waiting for second Tag');
-    localPoseData = receive(arTagSub,5);
-    odomData = receive(followerOdomSub, 5);
+    localPoseData = receive(arTagSub,timeOut);
+    odomData = receive(followerOdomSub, timeOut);
     
     if size(localPoseData.Markers,1) > 0
         % Store second Pose
@@ -102,7 +103,7 @@ while counter < 2
 end
 
 % Interpolate Leader Orientation
-[desiredOrientation, direction] = InterpolateLeaderOrientation(currentARGlobalPosition, previousARGlobalPosition, tbOrientation(1));
+[desiredOrientation, direction] = InterpolateLeaderOrientation(currentARGlobalPosition, previousARGlobalPosition, tbOrientation(1), tbOrientation(1));
 
 % Calculate target position offset from leader
 targetGlobalPosition = [(currentARGlobalPosition.Position.X - (followerOffset*(cos(desiredOrientation)))), (currentARGlobalPosition.Position.Y - (followerOffset*(sin(desiredOrientation)))), 0];
@@ -126,17 +127,15 @@ end
 
 sendVel(robotVelocity, linearVel, angularVel);
 
-
 count = 0;
 % Main Loop
 while(1)
-    %disp('In Main Loop');
     if count == 15
         count = 0;
         
         % Read latest ROS messages (odom and ar tag)
-        localPoseData = receive(arTagSub,5);
-        odomData = receive(followerOdomSub, 5);
+        localPoseData = receive(arTagSub,timeOut);
+        odomData = receive(followerOdomSub, timeOut);
 
         if size(localPoseData.Markers,1) > 0
             if lostAR == 1
@@ -145,12 +144,7 @@ while(1)
                 linearVel = 0;
                 angularVel = 0;
                 sendVel(robotVelocity, linearVel, angularVel);
-                lostAR = 0;
-                
-                pause(2);
-                localPoseData = receive(arTagSub,5);
-                odomData = receive(followerOdomSub, 5);
-                
+                lostAR = 0;                
             end
 
             % Store previous Pose
@@ -162,12 +156,7 @@ while(1)
             tbQuat = odomData.Pose.Pose.Orientation;
             tbOrientation = quat2eul([tbQuat.W tbQuat.X tbQuat.Y tbQuat.Z]); %Rot on z is (1)
 
-            % Local Pose TF
-            try 
-                currentLocalPose = localPoseData.Markers.Pose.Pose;
-            catch
-               disp('issue here'); 
-            end
+            currentLocalPose = localPoseData.Markers.Pose.Pose;
             currentOffsetLocalPose = currentLocalPose;
             currentOffsetLocalPose.Position.X = currentOffsetLocalPose.Position.X + arXOffset;
             currentOffsetLocalPose.Position.Y = currentOffsetLocalPose.Position.Y - arYOffset;
@@ -176,13 +165,11 @@ while(1)
             currentARGlobalPosition = ConvertToGlobal(currentOffsetLocalPose, tbPose, tbOrientation);
 
             % Interpolate Orientation
-            [desiredOrientation, direction] = InterpolateLeaderOrientation(currentARGlobalPosition, previousARGlobalPosition, tbOrientation(1));
+            [desiredOrientation, direction] = InterpolateLeaderOrientation(currentARGlobalPosition, previousARGlobalPosition, tbOrientation(1), previousOrientation);
 
 
             if direction == 2
-                % Leader Stopped, stop driving if already following the robot
-                % at the required distance
-
+                % Leader Stopped
 
                 % Maintain current heading
                 desiredOrientation = previousOrientation;
@@ -196,9 +183,6 @@ while(1)
             else
                 % Calculate target position offset from leader
                 targetGlobalPosition = [(currentARGlobalPosition.Position.X - (followerOffset*(cos(desiredOrientation)))), (currentARGlobalPosition.Position.Y - (followerOffset*(sin(desiredOrientation)))), 0];
-
-                % Drive towards leader using targetGlobalPosition, direction (1 =
-                % forwards, 0 = reverse) & target orientation
 
                 % Calculate parameters to drive to leader
                 [linearVel, angularVel] = calculateDriveParams(tbPose, tbOrientation(1), targetGlobalPosition, desiredOrientation);
@@ -217,20 +201,51 @@ while(1)
             % Send velocity command to ROS
             sendVel(robotVelocity, linearVel, angularVel);
 
-
         else
             % Lost the AR tag, spin around to search for it again
             disp('Lost AR Tag, searching again');
             lostAR = 1;
+            
+            y1 = tbPose.Y;
+            y2 = targetGlobalPosition(2);
+            
+            theta = angle(tbPose.X, tbPose.Y, targetGlobalPosition(1), targetGlobalPosition(2));
 
+            delta = tbOrientation(1); % Currently in range of -pi to pi with zero being right x axis
+            
+            angleToGo = theta - delta(1);
+            
+            % Case 1 - target above turtle
+            if (y1 < y2)
+                sigma = -(pi - theta);
+                if (delta(1) > theta && delta(1) < pi || delta(1) > -pi && delta(1) < sigma)
+                        angularVel = -1;
+                end
+                
+                if (delta(1) > sigma && delta(1) < 0 || delta(1) > 0 && delta(1) < theta)
+                        angularVel = 1;
+                end
+            end
+            
+            % Case 2 - target below turtle
+            if (y2 < y1)
+                sigma = pi + theta;
+                
+                if (delta(1) < 0 && delta(1) > theta || delta(1) > 0 && delta(1) < sigma)
+                        angularVel = -1;
+                end
+                
+                if (delta(1) > sigma && delta(1) < pi || delta(1) > -pi && delta(1) < theta)
+                        angularVel = 1;
+                end
+            end
+            
             linearVel = 0;
-            angularVel = 1;
             sendVel(robotVelocity, linearVel, angularVel);
 
-
             % Read latest ROS messages (odom and ar tag)
-            localPoseData = receive(arTagSub,5);
-            odomData = receive(followerOdomSub, 5);
+            localPoseData = receive(arTagSub,timeOut);
+            odomData = receive(followerOdomSub,timeOut);
             
             count = 15;
 
@@ -239,7 +254,7 @@ while(1)
         pause(0.1);
         
     else
-        odomData = receive(followerOdomSub, 5);
+        odomData = receive(followerOdomSub, timeOut);
         
         tbPose = odomData.Pose.Pose.Position;
         tbQuat = odomData.Pose.Pose.Orientation;
@@ -397,7 +412,4 @@ function ang = angle(x1, y1, x2, y2)
     ang = atan2(deltaY, deltaX);
 end
 
-function arTagCallback(src,msg)
-    disp('arTagCallback function called');
 
-end

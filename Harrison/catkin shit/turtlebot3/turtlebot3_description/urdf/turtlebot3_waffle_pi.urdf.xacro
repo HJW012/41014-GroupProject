@@ -35,6 +35,29 @@
                izz="1.4612727e-02" />
     </inertial>
   </link>
+  
+  <joint name="ar_tag_joint" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="simple_box_base_link"/>
+    <origin xyz="-0.2 0.0 0.1" rpy="-1.57 3.14 1.57"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  
+  <link name="simple_box_base_link">
+	<gravity> 0 </gravity>
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="0.0001" />
+            <inertia ixx="0.0001" ixy="0.0" ixz="0.0" iyy="0.0001" iyz="0.0" izz="0.0001"/>
+        </inertial>
+        <visual>
+            <origin rpy="0.0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="package://ar_tag_demo/meshes/ar_tag_0_to_3.dae"/>
+            </geometry>
+        </visual>   
+    </link>
 
   <joint name="wheel_left_joint" type="continuous">
     <parent link="base_link"/>
