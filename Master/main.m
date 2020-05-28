@@ -104,7 +104,7 @@ while counter < 2
 end
 
 % Interpolate Leader Orientation
-[desiredOrientation, direction] = InterpolateLeaderOrientation(currentARGlobalPosition, previousARGlobalPosition, tbOrientation(1), tbOrientation(1));
+[desiredOrientation, direction] = InterpolateLeaderOrientation(currentARGlobalPosition, previousARGlobalPosition, tbOrientation(1), pi/2, previousDirection);
 
 % Calculate target position offset from leader
 targetGlobalPosition = [(currentARGlobalPosition.Position.X - (followerOffset*(cos(desiredOrientation)))), (currentARGlobalPosition.Position.Y - (followerOffset*(sin(desiredOrientation)))), 0];
@@ -148,7 +148,7 @@ while(1)
                 sendVel(robotVelocity, linearVel, angularVel);
                 lostAR = 0;                
             end
-
+            
             % Store previous Pose
             previousARGlobalPosition = currentARGlobalPosition;
             previousOrientation = desiredOrientation;
@@ -158,7 +158,7 @@ while(1)
             tbPose = odomData.Pose.Pose.Position;
             tbQuat = odomData.Pose.Pose.Orientation;
             tbOrientation = quat2eul([tbQuat.W tbQuat.X tbQuat.Y tbQuat.Z]); %Rot on z is (1)
-
+            
             currentLocalPose = localPoseData.Markers.Pose.Pose;
             currentOffsetLocalPose = currentLocalPose;
             currentOffsetLocalPose.Position.X = currentOffsetLocalPose.Position.X + arXOffset;
@@ -168,7 +168,7 @@ while(1)
             currentARGlobalPosition = ConvertToGlobal(currentOffsetLocalPose, tbPose, tbOrientation);
 
             % Interpolate Orientation
-            [desiredOrientation, direction] = InterpolateLeaderOrientation(currentARGlobalPosition, previousARGlobalPosition, tbOrientation(1), previousOrientation);
+            [desiredOrientation, direction] = InterpolateLeaderOrientation(currentARGlobalPosition, previousARGlobalPosition, tbOrientation(1), previousOrientation, previousDirection);
 
 
             if direction == 2
@@ -186,7 +186,6 @@ while(1)
 
                 % Calculate parameters to drive to leader
                 [linearVel, angularVel] = calculateDriveParams(tbPose, tbOrientation(1), targetGlobalPosition, desiredOrientation);
-
 
             end
 
@@ -291,6 +290,9 @@ function [linearVel, angularVel] = calculateDriveParams(currentPose, currentOrie
         z2 = targetGlobalPose(3);
         distanceToTarget = distance(x1, y1, z1, x2, y2, z2);
         
+        disp(['Follower Position: ', num2str(x1) ', ', num2str(y1)]);
+        disp(['Target Position: ', num2str(x2), ', ', num2str(y2)]);
+        
         linearGap = 0.1;
         angleGap = 0.001;
         angularGain = 0.75;
@@ -306,11 +308,15 @@ function [linearVel, angularVel] = calculateDriveParams(currentPose, currentOrie
             
             if ((-1*(deg2rad(110)) < diffAngle) && (diffAngle < deg2rad(110)))
                 % Target position in front of follower
+                disp('Follower driving forward');
                 direction = 1;
                 
             else
                 % Target position behind follower
+                disp('Follower driving reverse');
                 direction = -1;
+                angularGain = 1.5;
+                linearGain = 2.5;
 
                 % Maintain heading in line with the target point but drive backwards
                 if theta <= 0
@@ -354,10 +360,18 @@ function [linearVel, angularVel] = calculateDriveParams(currentPose, currentOrie
                     end
                 end
             end
-            if (abs(angleToGo) <= 500 * angleGap)
-                linearVel = direction * linearGain * (distanceToTarget + 0.3);
-            end
             
+            if direction < 0
+                if (abs(angleToGo) <= 700 * angleGap)
+                    linearVel = direction * linearGain * (distanceToTarget + 0.3);
+                end
+            else
+                if (abs(angleToGo) <= 500 * angleGap)
+                    linearVel = direction * linearGain * (distanceToTarget + 0.3);
+                end
+                
+            end
+
         else
             disp("Target Reached");
             
@@ -366,7 +380,8 @@ function [linearVel, angularVel] = calculateDriveParams(currentPose, currentOrie
             
             angleToGo = theta - delta;
             
-            if (abs(angleToGo) <= 10 * angleGap)
+            if (abs(angleToGo) <= 200 * angleGap)
+                disp('Stopped Moving');
                 linearVel = 0;
                 angularVel = 0;
                 
