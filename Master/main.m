@@ -1,9 +1,11 @@
 % Initialising the environment
-%rosshutdown;
+rosshutdown;
 %ipaddress = 'http://192.168.46.130:11311';
-%rosinit(ipaddress);
+%(ipaddress);
 clc;
 clear;
+
+rosshutdown;
 
 pause(2);
 
