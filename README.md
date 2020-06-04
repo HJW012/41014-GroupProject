@@ -17,3 +17,5 @@ To look at the outputs you can rostopic echo the ar_pose_marker topic or you can
 I'm trying to work on only needing to run a single launch file, but it seems that because it is an XML file the launch files may not be called sequentially and it results in some weird things (the turtlebot is rendered as the tag bundle and stuff like that). Maybe it might be worth looking into calling launch files from MATLAB but I have no idea if that is even possible.
 
 Any issues with running it, let me know. I'm hoping you will have everything and it should work fine.
+
+Presentation Link: https://docs.google.com/presentation/d/18KdI9RB-r9HiZopdj6-FPyHmF_QYrqALFnThBqa4ZFk/edit?usp=sharing
