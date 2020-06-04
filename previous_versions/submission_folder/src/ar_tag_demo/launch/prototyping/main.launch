@@ -1,0 +1,7 @@
+<launch>
+ <include file="$(find ar_tag_demo)/launch/spawn_ar_tag.launch" />
+ <include file="$(find ar_tag_demo)/launch/sim_track_bundle.launch" />
+
+</launch>
+
+

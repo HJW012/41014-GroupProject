@@ -1,13 +1,19 @@
+%% Convert to Global
+% Function used to convert the data from the AR Tag tracking ROS package
+% into the global coordinate frame
+
 function arGlobalPose = ConvertToGlobal(currentOffsetLocalPose, tbPose, tbOrientation)
     % Distance between TB and ARTag
     distance = abs(sqrt( (currentOffsetLocalPose.Position.Z)^2 + (currentOffsetLocalPose.Position.X)^2 ));
 
     % Convert to ARTag to global pose
-    arGlobalPose.Position.Z = -currentOffsetLocalPose.Position.Y; %Not totally correct - dont take height of camera into account yet
+    arGlobalPose.Position.Z = -currentOffsetLocalPose.Position.Y; 
     originX = tbPose.X;
     originY = tbPose.Y;
     zRot = tbOrientation(1);
 
+    % Calculate relative positioning of the leader with respect to the
+    % follower and extrapolate global position using follower orientation
     if (zRot > pi/2)
        if (currentOffsetLocalPose.Position.X < 0) % 1
            alpha = atan(abs(currentOffsetLocalPose.Position.X / currentOffsetLocalPose.Position.Z));
@@ -16,7 +22,7 @@ function arGlobalPose = ConvertToGlobal(currentOffsetLocalPose, tbPose, tbOrient
 
            arGlobalPose.Position.X = -distance * cos(abs(gamma)) + tbPose.X;
            arGlobalPose.Position.Y = distance * sin(abs(gamma)) + tbPose.Y;
-           disp("Case 1");
+
        elseif (currentOffsetLocalPose.Position.X > 0) % 2
            alpha = atan(abs(currentOffsetLocalPose.Position.X / currentOffsetLocalPose.Position.Z));
            theta = zRot;
@@ -24,7 +30,6 @@ function arGlobalPose = ConvertToGlobal(currentOffsetLocalPose, tbPose, tbOrient
 
            arGlobalPose.Position.X = -distance * cos(abs(gamma)) + tbPose.X;
            arGlobalPose.Position.Y = distance * sin(abs(gamma)) + tbPose.Y;
-           disp("Case 2");
        end
     end
 
@@ -36,7 +41,7 @@ function arGlobalPose = ConvertToGlobal(currentOffsetLocalPose, tbPose, tbOrient
 
            arGlobalPose.Position.X = distance * cos(abs(gamma)) + tbPose.X;
            arGlobalPose.Position.Y = distance * sin(abs(gamma)) + tbPose.Y;
-           disp("Case 3");
+
        elseif (currentOffsetLocalPose.Position.X > 0) % 4
            alpha = atan(abs(currentOffsetLocalPose.Position.X / currentOffsetLocalPose.Position.Z));
            theta = zRot;
@@ -44,7 +49,6 @@ function arGlobalPose = ConvertToGlobal(currentOffsetLocalPose, tbPose, tbOrient
 
            arGlobalPose.Position.X = distance * cos(abs(gamma)) + tbPose.X;
            arGlobalPose.Position.Y = distance * sin(abs(gamma)) + tbPose.Y;
-           disp("Case 4");
        end
     end
 
@@ -56,7 +60,7 @@ function arGlobalPose = ConvertToGlobal(currentOffsetLocalPose, tbPose, tbOrient
 
            arGlobalPose.Position.X = distance * cos(abs(gamma)) + tbPose.X;
            arGlobalPose.Position.Y = -distance * sin(abs(gamma)) + tbPose.Y;
-           disp("Case 5");
+
        elseif (currentOffsetLocalPose.Position.X > 0) % 6
            alpha = atan(abs(currentOffsetLocalPose.Position.X / currentOffsetLocalPose.Position.Z));
            theta = abs(zRot);
@@ -64,7 +68,6 @@ function arGlobalPose = ConvertToGlobal(currentOffsetLocalPose, tbPose, tbOrient
 
            arGlobalPose.Position.X = distance * cos(abs(gamma)) + tbPose.X;
            arGlobalPose.Position.Y = -distance * sin(abs(gamma)) + tbPose.Y;
-           disp("Case 6");
        end
     end
 
@@ -76,7 +79,7 @@ function arGlobalPose = ConvertToGlobal(currentOffsetLocalPose, tbPose, tbOrient
 
            arGlobalPose.Position.X = -distance * cos(abs(gamma)) + tbPose.X;
            arGlobalPose.Position.Y = -distance * sin(abs(gamma)) + tbPose.Y;
-           disp("Case 7");
+           
        elseif (currentOffsetLocalPose.Position.X > 0) % 8
            alpha = atan(abs(currentOffsetLocalPose.Position.X / currentOffsetLocalPose.Position.Z));
            theta = abs(zRot);
@@ -84,7 +87,6 @@ function arGlobalPose = ConvertToGlobal(currentOffsetLocalPose, tbPose, tbOrient
 
            arGlobalPose.Position.X = -distance * cos(abs(gamma)) + tbPose.X;
            arGlobalPose.Position.Y = -distance * sin(abs(gamma)) + tbPose.Y;
-           disp("Case 8");
        end 
     end
 

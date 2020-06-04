@@ -1,9 +1,9 @@
 # README File for Sensors and Control Group Assignment
 
 Students in group and associated contribution percentages to the code development:
-Liam Thurston (98102534) - 
-Harrison Wittke (12545012) - 
-Rhys Edwards (12618272) -
+Liam Thurston (98102534) - 40%
+Harrison Wittke (12545012) - 40%
+Rhys Edwards (12618272) - 20%
 
 Project Brief:
 The objective of this assignment was to utilise sensor information captured through the RGB-D camera mounted on the follower turtlebot to identify, locate and follow the lead turtlebot in the Gazebo simulation environment. It was the goal of the project team that the lead robot would have a unique identifier tag mounted to it to assist in the object identification and pose estimation tasks. The follower robot was then programmed to follow the lead robot at a distance of 0.5m.
@@ -30,7 +30,11 @@ YOU WILL NEED TO INSTALL THE CUSTOM ROS MESSAGES LIBRARY IN MATLAB AS THE /ar_po
     b. Add the custom message folder to the MATLAB path by executing: 
         addpath('FILEPATH DISPLAYED')
         savepath
-    c. Restart MATLAB and verify that you can use the custom messages. Type "rosmsg list" and ensure that the output contains the generated custom message types.
+    c. Restart MATLAB and verify that you can use the custom messages. Type "rosmsg list" and ensure that the output contains the generated custom message types. These should be as follows:
+	i.   ar_track_alvar/AlvarMarker                                     
+	ii.  ar_track_alvar/AlvarMarkers                                    
+	iii. ar_track_alvar_msgs/AlvarMarker                                
+	iv.  ar_track_alvar_msgs/AlvarMarkers   
 
 HAVING SUCCESSFULLY INSTALLED THE CUSTOM ROS MESSAGES LIBRARY IN MATLAB YOU CAN NOW RUN THE SIMULATION
 
@@ -41,7 +45,7 @@ HAVING SUCCESSFULLY INSTALLED THE CUSTOM ROS MESSAGES LIBRARY IN MATLAB YOU CAN 
 14. To stop the simulation type Ctrl+C into MATLAB and the running ROS nodes.
 
 
-It is VERY important that the above steps are followed closely to ensure the correct operation of our project demonstration. It is also EXTREMELY important that the folders that have been submitted are used as some of the underlying URDF files have been edited to ensure correct execution of our simulation.
+It is VERY important that the above steps are followed closely to ensure the correct operation of our project demonstration. It is also EXTREMELY important that the folders that have been submitted are used, as some of the underlying URDF files have been edited to ensure correct execution of our simulation.
 
 A full list of the edited files created and/or modified by the project team is below:
 '~/catkin_ws/src/turtlebot3_simulations/turtlebot3_gazebo/launch/two_turtlebot3.launch' - Required launch file for the successful execution of the simulation.
